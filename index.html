@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #container{
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+        }
+        #container>div{
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            border: 1px solid;
+        }
+    </style>
+</head>
+<body>
+    <h2>Members Details</h2>
+    
+    <div id="titlebar">
+        <input type="text" id="nameMember" placeholder="Enter Name">
+        <label> Membership Date<input type="date" id="membershipDate" ></label>
+        <label for="">Active<input type="checkbox" id="isActive"></label>
+        <button id="addMemberButton" onclick="addMembers()">Add</button>
+    </div>
+    <div id="select">
+        <button id="displayNone" onclick="displayNone()">None</button>
+        
+        <button id="displayMembers">Members</button>
+    </div>    
+    <div id="container"></div>
+    <div id="changePage">
+        <button id="previous">Previous</button>
+        <button id="next">Next</button>
+    </div>
+</body>
+</html>
+<script>
+
+    
+    let members = [];
+   
+    let curMemberPage = 1;
+    let itemPerPage = 2;
+    let type ="";
+    
+    document.getElementById('displayMembers').onclick =()=> displayMembers(curMemberPage);
+    let category = document.getElementById('cat');
+    let container = document.getElementById('container');
+    let titlebar = document.getElementById('titlebar');
+    
+
+    // window onload
+    window.onload = async()=>{
+       
+        await getMembers();
+    }
+   
+    // adding members
+
+    async function addMembers(){
+        
+       
+        let nameMember = document.getElementById('nameMember');
+        let membershipDate = document.getElementById('membershipDate');
+        let isActive = document.getElementById('isActive');
+        let add = document.getElementById('addMemberButton');
+        
+        
+            let member = {
+                name : nameMember.value,
+                membershipDate : membershipDate.value,
+                isActive : isActive.checked
+            } 
+            await fetch('https://student-d50d9-default-rtdb.asia-southeast1.firebasedatabase.app/members.json',{
+                method : 'POST',
+                headers : {
+                    'Content-Type': 'application/json'
+                },
+                body : JSON.stringify(member)
+            })
+            nameMember.value = '';
+            membershipDate.value = '';
+            isActive.checked = false;
+            await getMembers();
+        
+        
+    }
+    // fetching 
+
+
+    async function getMembers(){
+        let response = await fetch('https://student-d50d9-default-rtdb.asia-southeast1.firebasedatabase.app/members.json');
+        let data = await response.json();
+        members = Object.entries(data).map(([id,details])=>({id,...details}));
+    }
+
+    //  display none
+
+    function displayNone(){
+        container.innerHTML='';
+    }
+
+   
+       
+    // display members 
+
+    function displayMembers(page){
+        type = "Members";
+        let start = (page - 1) * itemPerPage;
+        let end = page * itemPerPage;
+        let pageItems = members.slice(start,end);
+        container.innerHTML = '';
+        pageItems.forEach((member)=>{
+            let div = document.createElement('div');
+            let disName = document.createElement('h4');
+            let disMembershipDate = document.createElement('h4');
+            let disIsActive = document.createElement('h4');
+            let disEdit = document.createElement('button');
+            let disDelete = document.createElement('button');
+            disName.innerText = member.name;
+            disMembershipDate.innerText = "Membership Data :" + member.membershipDate;
+            disIsActive.innerText = "Active :"+ member.isActive;
+            disEdit.innerText = "Edit";
+            disDelete.innerText = "Delete";
+            div.append(disName,disMembershipDate,disIsActive,disEdit,disDelete);
+            container.append(div);
+            disDelete.addEventListener('click',()=>{
+                deleteData("members",member.id);
+                div.remove();
+            })
+            disEdit.addEventListener('click', ()=>{
+                deleteData('')
+            })
+
+        })
+    }
+
+    // pagination
+
+    
+        
+        let previous = document.getElementById('previous');
+        let next = document.getElementById('next');
+        
+        
+        next.addEventListener('click',()=>{
+            
+            displayMembers(++curMemberPage)
+        })
+        previous.addEventListener('click',()=>{
+           
+            displayMembers(--curMemberPage)
+        })
+    
+
+    // delete the data
+
+    async function deleteData(branch,id){
+        fetch(`https://student-d50d9-default-rtdb.asia-southeast1.firebasedatabase.app/members/${id}.json`,{
+            method : 'DELETE',
+            headers :{
+                'Content-Type': 'application/json'
+            }
+        })
+    }
+</script>
